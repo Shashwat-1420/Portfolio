@@ -299,7 +299,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 ## 👤 Author
 
 **Shashwat Mishra**
-- 🌐 Portfolio: [Live Site](https://your-portfolio.netlify.app)
+- 🌐 Portfolio: [Live Site](https://proportsm.netlify.app)
 - 💼 LinkedIn: [@sam140706](https://www.linkedin.com/in/sam140706/)
 - 🐙 GitHub: [@StrikerSam-Ai](https://github.com/StrikerSam-Ai)
 - 🐦 Twitter: [@SHASHWATMI67916](https://x.com/SHASHWATMI67916)

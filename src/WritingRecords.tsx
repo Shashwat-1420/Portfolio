@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { browserProgressReader as progressReader, type ParsedProgressReport } from './utils/browserProgressReader';
 import { MarkdownRenderer } from './components/MarkdownRenderer';
 import { ProgressDashboard } from './components/dashboard/ProgressDashboard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCalendarDays,
+  faArrowLeft,
   faArrowRight,
   faFileAlt,
   faChartLine,
@@ -94,8 +95,13 @@ const WritingRecords: React.FC = () => {
   };
 
   return (
-    <div className="section-container" style={{ paddingTop: '80px', minHeight: '100vh' }}>
+    <div className="section-container" style={{ paddingTop: '80px', minHeight: '100vh', position: 'relative' }}>
+      <Link to="/" className="home-back-button">
+        <FontAwesomeIcon icon={faArrowLeft} /> Home
+      </Link>
+
       <div className="section-header">
+
         <h2 className="section-title">Knowledge & <span className="highlight-text">Progress</span></h2>
         <div className="section-line"></div>
       </div>

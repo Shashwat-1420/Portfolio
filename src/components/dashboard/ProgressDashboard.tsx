@@ -4,6 +4,9 @@ import { faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { DashboardKPIs } from './DashboardKPIs';
 import { DashboardCharts } from './DashboardCharts';
 import { ActivityHeatmap } from '../ActivityHeatmap';
+import { LevelProgress } from './LevelProgress';
+import { BadgeShowcase } from './BadgeShowcase';
+import { GamificationEngine } from '../../utils/gamificationEngine';
 import type { ParsedProgressReport, ProgressStats } from '../../utils/browserProgressReader';
 
 interface ProgressDashboardProps {
@@ -52,12 +55,19 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
         moodRadarData,
         moodChartData,
         heatmapData,
-        achievementVelocity
+        achievementVelocity,
+        userLevel,
+        userBadges
     } = useMemo(() => {
         if (!stats || !reports) return {};
 
         const scores = reports.map(r => r.productivityScore || 0);
         const trend = calculateTrend(scores);
+
+        // Gamification Stats
+        const xp = GamificationEngine.calculateXP(reports);
+        const level = GamificationEngine.getLevel(xp);
+        const badges = GamificationEngine.checkBadges(stats, reports);
 
         const velocity = (stats.totalDays || 0) > 0
             ? ((stats.totalAchievements || 0) / (stats.totalDays || 1)).toFixed(1)
@@ -147,7 +157,9 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
             moodRadarData: radarData,
             moodChartData: chartData,
             heatmapData: heatmap,
-            achievementVelocity: velocity
+            achievementVelocity: velocity,
+            userLevel: level,
+            userBadges: badges
         };
     }, [stats, reports]);
 
@@ -186,11 +198,21 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
 
     return (
         <div style={{ padding: '2rem 0', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+            {/* Gamification Level Banner */}
+            {userLevel && (
+                <LevelProgress
+                    currentXP={userLevel.currentXP}
+                    nextLevelXP={userLevel.nextLevelXP}
+                    currentLevel={userLevel.currentLevel}
+                    levelName={userLevel.levelName}
+                />
+            )}
+
             <DashboardKPIs
                 stats={stats}
                 productivityTrend={productivityTrend as 'up' | 'down' | 'stable'}
                 streak={stats.currentStreak}
-                longestStreak={stats.currentStreak} // Update logic if longest streak available
+                longestStreak={stats.longestStreak || 0}
                 achievementVelocity={achievementVelocity as string}
             />
 
@@ -206,6 +228,10 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                 moodRadarData={moodRadarData}
                 moodChartData={moodChartData}
             />
+
+            {/* Achievement Badges */}
+            {userBadges && <BadgeShowcase badges={userBadges} />}
         </div>
     );
 };
+

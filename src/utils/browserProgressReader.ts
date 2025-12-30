@@ -28,6 +28,7 @@ export interface ProgressStats {
   topTags: Array<{ tag: string; count: number }>;
   currentStreak: number;
   averageProductivity: number;
+  longestStreak: number;
 }
 
 class BrowserProgressReader {
@@ -52,7 +53,7 @@ class BrowserProgressReader {
   }
 
   // Scan the progress-reports/2025 folder for actual report files
-    async scanProgressReportsFromFolder(): Promise<ParsedProgressReport[]> {
+  async scanProgressReportsFromFolder(): Promise<ParsedProgressReport[]> {
     // Check cache first
     const now = Date.now();
     if (this.reportsCache && (now - this.cacheTimestamp) < this.CACHE_DURATION) {
@@ -61,15 +62,15 @@ class BrowserProgressReader {
     }
 
     console.log('🔄 Scanning for progress reports...');
-    
+
     try {
       const reports: ParsedProgressReport[] = [];
       const basePath = this.getBasePath();
-      
+
       // Fetch the manifest file
       console.log('🔍 Fetching manifest...');
       const manifestResponse = await fetch(`${basePath}/progress-reports/manifest.json?t=${Date.now()}`);
-      
+
       if (!manifestResponse.ok) {
         console.warn('❌ Failed to fetch manifest.json, falling back to hardcoded list temporarily for safety if needed, or just returning empty.');
         // For now, we'll return empty or throw to indicate failure.
@@ -93,7 +94,7 @@ class BrowserProgressReader {
           const dayIndex = parts.indexOf('day') + 1;
           const dayStr = parts[dayIndex];
           const day = parseInt(dayStr);
-          
+
           // Reconstruct date part (YYYY-MM-DD is usually at the end)
           // parts might be ['day', '003', '2025', '07', '26']
           const dateParts = parts.slice(dayIndex + 1);
@@ -101,10 +102,10 @@ class BrowserProgressReader {
 
           console.log(`🔍 Fetching: ${filename}`);
           const response = await fetch(`${basePath}/progress-reports/${year}/${filename}?t=${Date.now()}`);
-          
+
           if (response.ok) {
             const content = await response.text();
-            
+
             const parsed = this.parseMarkdownReport(content, filename, day, date);
             if (parsed) {
               reports.push(parsed);
@@ -118,15 +119,15 @@ class BrowserProgressReader {
       }
 
       console.log(`📊 Final result: ${reports.length} reports found`);
-      
+
       const sortedReports = reports.sort((a, b) => b.day - a.day);
-      
+
       // Cache the results
       this.reportsCache = sortedReports;
       this.cacheTimestamp = now;
-      
+
       return sortedReports;
-      
+
     } catch (error) {
       console.warn('❌ Scan failed:', error);
       return [];
@@ -136,7 +137,7 @@ class BrowserProgressReader {
   private parseMarkdownReport(content: string, filename: string, day: number, date: string): ParsedProgressReport | null {
     try {
       console.log(`Parsing content for ${filename}...`);
-      
+
       // Extract title from first heading
       const titleMatch = content.match(/^#\s+(.+)/m);
       const title = titleMatch ? titleMatch[1] : `Day ${day}`;
@@ -203,9 +204,9 @@ class BrowserProgressReader {
 
       console.log(`✅ Successfully parsed Day ${day}: ${title}, Mood: ${mood}, Score: ${productivityScore}`);
       console.log(`   Achievements: ${achievements.length}, Learnings: ${learnings.length}, Challenges: ${challenges.length}`);
-      
+
       const basePath = this.getBasePath();
-      
+
       return {
         day,
         date,
@@ -227,63 +228,66 @@ class BrowserProgressReader {
   }
 
   async getStats(): Promise<ProgressStats> {
-  if (this.statsCache) {
-    return this.statsCache;
+    if (this.statsCache) {
+      return this.statsCache;
+    }
+
+    const reports = await this.getAllReports();
+
+    const currentStreak = this.calculateStreak(reports);
+
+    const stats: ProgressStats = {
+      totalDays: reports.length,
+      averageScore: reports.reduce((acc, r) => acc + (r.productivityScore || 0), 0) / reports.length || 0,
+      streak: currentStreak,
+      totalAchievements: reports.reduce((acc, r) => acc + (r.achievements?.length || 0), 0),
+      mostCommonMood: this.getMostCommonMood(reports),
+      improvementTrend: this.calculateTrend(reports),
+      moodDistribution: this.getMoodDistribution(reports),
+      weeklyScores: this.getWeeklyScores(reports),
+      focusAreas: this.getFocusAreas(reports),
+      latestReport: reports[0], // Most recent report
+      topTags: this.getTopTags(reports),
+      currentStreak: currentStreak, // Same as streak
+      averageProductivity: parseFloat((reports.reduce((acc, r) => acc + (r.productivityScore || 0), 0) / reports.length || 0).toFixed(1)),
+      longestStreak: currentStreak // Placeholder
+    };
+
+    // Clear stats cache every 30 seconds
+    setTimeout(() => {
+      this.statsCache = null;
+    }, 30000);
+
+    this.statsCache = stats;
+    return stats;
   }
 
-  const reports = await this.getAllReports();
-  
-  const stats: ProgressStats = {
-    totalDays: reports.length,
-    averageScore: reports.reduce((acc, r) => acc + (r.productivityScore || 0), 0) / reports.length || 0,
-    streak: this.calculateStreak(reports),
-    totalAchievements: reports.reduce((acc, r) => acc + (r.achievements?.length || 0), 0),
-    mostCommonMood: this.getMostCommonMood(reports),
-    improvementTrend: this.calculateTrend(reports),
-    moodDistribution: this.getMoodDistribution(reports),
-    weeklyScores: this.getWeeklyScores(reports),
-    focusAreas: this.getFocusAreas(reports),
-    latestReport: reports[0], // Most recent report
-    topTags: this.getTopTags(reports),
-    currentStreak: this.calculateStreak(reports), // Same as streak
-    averageProductivity: parseFloat((reports.reduce((acc, r) => acc + (r.productivityScore || 0), 0) / reports.length || 0).toFixed(1))
-  };
-
-  // Clear stats cache every 30 seconds
-  setTimeout(() => {
-    this.statsCache = null;
-  }, 30000);
-
-  this.statsCache = stats;
-  return stats;
-}
-
-      private calculateStreak(reports: ParsedProgressReport[]): number {
+  private calculateStreak(reports: ParsedProgressReport[]): number {
     if (reports.length === 0) return 0;
-    
+
     // Sort reports by day number in descending order (most recent first)
     const sortedReports = reports.sort((a, b) => b.day - a.day);
-    
+
     // Calculate current streak from the most recent day backwards
     const startDate = new Date('2025-07-24T00:00:00');
     const today = new Date();
-    
+
     // Set to start of day to avoid timezone issues
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const startDateStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    
+
     const diffTime = todayStart.getTime() - startDateStart.getTime();
     const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
+
     let streak = 0;
-    
+
     // Check if we have a report for today (current day)
     const hasToday = sortedReports.some(report => report.day === currentDay);
     if (!hasToday) {
       console.log(`📊 No report for today (day ${currentDay}), streak = 0`);
       return 0; // No streak if we don't have today's report
     }
-    
+
     // Count consecutive days backwards from current day
     for (let day = currentDay; day >= 1; day--) {
       const hasReport = sortedReports.some(report => report.day === day);
@@ -293,14 +297,14 @@ class BrowserProgressReader {
         break; // Break the streak if we find a missing day
       }
     }
-    
+
     console.log(`📊 Streak calculation: Current day ${currentDay}, Reports: ${reports.length}, Streak: ${streak}`);
     return streak;
   }
 
   private getMostCommonMood(reports: ParsedProgressReport[]): string {
     const moodCounts: Record<string, number> = {};
-    
+
     reports.forEach(report => {
       if (report.mood) {
         moodCounts[report.mood] = (moodCounts[report.mood] || 0) + 1;
@@ -309,7 +313,7 @@ class BrowserProgressReader {
 
     let mostCommon = '😊';
     let maxCount = 0;
-    
+
     Object.entries(moodCounts).forEach(([mood, count]) => {
       if (count > maxCount) {
         maxCount = count;
@@ -322,13 +326,13 @@ class BrowserProgressReader {
 
   private calculateTrend(reports: ParsedProgressReport[]): 'up' | 'down' | 'stable' {
     if (reports.length < 2) return 'stable';
-    
+
     const recent = reports.slice(0, 3);
     const older = reports.slice(3, 6);
-    
+
     const recentAvg = recent.reduce((acc, r) => acc + (r.productivityScore || 0), 0) / recent.length;
     const olderAvg = older.reduce((acc, r) => acc + (r.productivityScore || 0), 0) / (older.length || 1);
-    
+
     if (recentAvg > olderAvg + 0.5) return 'up';
     if (recentAvg < olderAvg - 0.5) return 'down';
     return 'stable';
@@ -377,7 +381,7 @@ class BrowserProgressReader {
 
   private getTopTags(reports: ParsedProgressReport[]): Array<{ tag: string; count: number }> {
     const tagCounts: Record<string, number> = {};
-    
+
     reports.forEach(report => {
       if (report.tags) {
         report.tags.forEach(tag => {
@@ -399,6 +403,6 @@ class BrowserProgressReader {
     this.cacheTimestamp = 0;
   }
 }
- 
+
 
 export const browserProgressReader = new BrowserProgressReader();

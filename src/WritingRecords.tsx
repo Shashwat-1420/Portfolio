@@ -8,8 +8,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCalendarDays,
   faArrowRight,
-  faRocket,
-  faSmile,
   faFileAlt,
   faChartLine,
   faBook,
@@ -36,18 +34,7 @@ const blogPosts = [
   },
 ].sort((a, b) => b.publishedDate.getTime() - a.publishedDate.getTime()); // Sort by most recent
 
-const researchPublications = [
-  {
-    title: "Research Publications Coming Soon",
-    url: "#",
-    author: "Future Work",
-    year: "2025",
-    image: "https://via.placeholder.com/300x200?text=Coming+Soon",
-    publishedDate: new Date(),
-    journal: "Stay Tuned",
-    status: 'upcoming'
-  }
-];
+
 
 const TABS = [
   { key: 'blog', label: 'Blog Posts', icon: faFileAlt },
@@ -57,7 +44,7 @@ const TABS = [
 
 const WritingRecords: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<string>('blog');
-  const [featuredIdx, setFeaturedIdx] = useState<number>(0);
+
 
   const [fileReports, setFileReports] = useState<ParsedProgressReport[]>([]);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
@@ -278,7 +265,7 @@ const WritingRecords: React.FC = () => {
                 ) : fileReports.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem' }}>No progress reports found.</div>
                 ) : (
-                  fileReports.map((report, idx) => (
+                  fileReports.map((report) => (
                     <div
                       key={`${report.day}-${report.date}`}
                       style={{

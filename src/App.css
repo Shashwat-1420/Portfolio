@@ -1850,3 +1850,32 @@ input:focus, textarea:focus {
     padding-right: 0;
   }
 }
+
+.section-container {
+  position: relative;
+}
+
+.home-back-button {
+  position: absolute;
+  top: 25px;
+  left: 40px;
+  color: var(--color-primary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  z-index: 10;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 179, 71, 0.1);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 179, 71, 0.2);
+  transition: all 0.3s ease;
+}
+
+.home-back-button:hover {
+  background: rgba(255, 179, 71, 0.2);
+  transform: translateX(-5px);
+}
+

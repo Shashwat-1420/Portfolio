@@ -39,3 +39,7 @@ Set-Content -Path $filepath -Value $newContent
 
 Write-Host "✅ Created new $prefix report: $filepath"
 Write-Host "👉 Don't forget to add '$filename' to public/progress-reports/manifest.json!"
+
+# Automatically open the file
+Write-Host "📂 Opening file..."
+Invoke-Item $filepath

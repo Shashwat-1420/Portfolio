@@ -53,70 +53,85 @@ class BrowserProgressReader {
 
   // Scan the progress-reports/2025 folder for actual report files
     async scanProgressReportsFromFolder(): Promise<ParsedProgressReport[]> {
-  // Check cache first
-  const now = Date.now();
-  if (this.reportsCache && (now - this.cacheTimestamp) < this.CACHE_DURATION) {
-    console.log('Using cached reports');
-    return this.reportsCache;
-  }
-
-  console.log('🔄 Scanning for progress reports...');
-  
-  try {
-    const reports: ParsedProgressReport[] = [];
-    
-    // Test exact files we know exist
-    const knownFiles = [
-      { filename: 'day-1-2025-07-24.md', day: 1, date: '2025-07-24' },
-      { filename: 'day-2-2025-07-25.md', day: 2, date: '2025-07-25' },
-      { filename: 'day-003-2025-07-26.md', day: 3, date: '2025-07-26' },
-      { filename: 'day-004-2025-07-27.md', day: 4, date: '2025-07-27' },
-      { filename: 'day-006-2025-07-29.md', day: 6, date: '2025-07-29' },
-      { filename: 'day-007-2025-07-30.md', day: 7, date: '2025-07-30' },
-      { filename: 'day-008-2025-07-31.md', day: 8, date: '2025-07-31' } // New file added
-    ];
-    
-    for (const { filename, day, date } of knownFiles) {
-      try {
-        console.log(`🔍 Fetching: ${filename}`);
-        const basePath = this.getBasePath();
-        const response = await fetch(`${basePath}/progress-reports/2025/${filename}?t=${Date.now()}`);
-        
-        if (response.ok) {
-          const content = await response.text();
-          console.log(`✅ Got content (${content.length} chars) for ${filename}`);
-          
-          const parsed = this.parseMarkdownReport(content, filename, day, date);
-          if (parsed) {
-            console.log(`✅ Parsed successfully: ${parsed.title}`);
-            reports.push(parsed);
-          } else {
-            console.log(`❌ Failed to parse ${filename}`);
-          }
-        } else {
-          console.log(`❌ HTTP ${response.status} for ${filename}`);
-        }
-      } catch (error) {
-        console.log(`❌ Error fetching ${filename}:`, error);
-      }
+    // Check cache first
+    const now = Date.now();
+    if (this.reportsCache && (now - this.cacheTimestamp) < this.CACHE_DURATION) {
+      console.log('Using cached reports');
+      return this.reportsCache;
     }
 
-    console.log(`📊 Final result: ${reports.length} reports found`);
-    reports.forEach(r => console.log(`  - Day ${r.day}: ${r.title} (${r.mood}, ${r.productivityScore}/10)`));
+    console.log('🔄 Scanning for progress reports...');
     
-    const sortedReports = reports.sort((a, b) => b.day - a.day);
-    
-    // Cache the results
-    this.reportsCache = sortedReports;
-    this.cacheTimestamp = now;
-    
-    return sortedReports;
-    
-  } catch (error) {
-    console.warn('❌ Scan failed:', error);
-    return [];
+    try {
+      const reports: ParsedProgressReport[] = [];
+      const basePath = this.getBasePath();
+      
+      // Fetch the manifest file
+      console.log('🔍 Fetching manifest...');
+      const manifestResponse = await fetch(`${basePath}/progress-reports/manifest.json?t=${Date.now()}`);
+      
+      if (!manifestResponse.ok) {
+        console.warn('❌ Failed to fetch manifest.json, falling back to hardcoded list temporarily for safety if needed, or just returning empty.');
+        // For now, we'll return empty or throw to indicate failure.
+        // But since we just created it, it should work.
+        throw new Error(`Manifest fetch failed: ${manifestResponse.status}`);
+      }
+
+      const manifest = await manifestResponse.json();
+      console.log('✅ Manifest loaded:', manifest);
+
+      // Process year 2025 (we can expand this logic later for multiple years)
+      const year = "2025";
+      const files = manifest.years?.[year] || [];
+
+      for (const filename of files) {
+        try {
+          // Extract basic info from filename before fetching
+          // Format: day-XXX-YYYY-MM-DD.md
+          const parts = filename.replace('.md', '').split('-');
+          // Handle 'day-1' vs 'day-001'
+          const dayIndex = parts.indexOf('day') + 1;
+          const dayStr = parts[dayIndex];
+          const day = parseInt(dayStr);
+          
+          // Reconstruct date part (YYYY-MM-DD is usually at the end)
+          // parts might be ['day', '003', '2025', '07', '26']
+          const dateParts = parts.slice(dayIndex + 1);
+          const date = dateParts.join('-');
+
+          console.log(`🔍 Fetching: ${filename}`);
+          const response = await fetch(`${basePath}/progress-reports/${year}/${filename}?t=${Date.now()}`);
+          
+          if (response.ok) {
+            const content = await response.text();
+            
+            const parsed = this.parseMarkdownReport(content, filename, day, date);
+            if (parsed) {
+              reports.push(parsed);
+            }
+          } else {
+            console.log(`❌ HTTP ${response.status} for ${filename}`);
+          }
+        } catch (error) {
+          console.log(`❌ Error processing ${filename}:`, error);
+        }
+      }
+
+      console.log(`📊 Final result: ${reports.length} reports found`);
+      
+      const sortedReports = reports.sort((a, b) => b.day - a.day);
+      
+      // Cache the results
+      this.reportsCache = sortedReports;
+      this.cacheTimestamp = now;
+      
+      return sortedReports;
+      
+    } catch (error) {
+      console.warn('❌ Scan failed:', error);
+      return [];
+    }
   }
-}
 
   private parseMarkdownReport(content: string, filename: string, day: number, date: string): ParsedProgressReport | null {
     try {

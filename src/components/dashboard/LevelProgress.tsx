@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStar, faTrophy, faBolt } from '@fortawesome/free-solid-svg-icons';
+import { faBolt } from '@fortawesome/free-solid-svg-icons';
 import '../../App.css'; // Ensure we have access to the glass utilities
 
 interface LevelProgressProps {
@@ -10,11 +10,11 @@ interface LevelProgressProps {
     levelName: string;
 }
 
-export const LevelProgress: React.FC<LevelProgressProps> = ({ 
-    currentXP, 
-    nextLevelXP, 
-    currentLevel, 
-    levelName 
+export const LevelProgress: React.FC<LevelProgressProps> = ({
+    currentXP,
+    nextLevelXP,
+    currentLevel,
+    levelName
 }) => {
     const [progress, setProgress] = useState(0);
 
@@ -64,7 +64,7 @@ export const LevelProgress: React.FC<LevelProgressProps> = ({
                     </div>
                 </div>
                 <div style={{ textAlign: 'right', display: 'none', flexDirection: 'column', gap: '0.2rem' }}>
-                    
+
                 </div>
             </div>
 
@@ -87,7 +87,7 @@ export const LevelProgress: React.FC<LevelProgressProps> = ({
                     boxShadow: '0 0 10px rgba(255, 179, 71, 0.5)'
                 }} />
             </div>
-            
+
             <div style={{ marginTop: '0.5rem', textAlign: 'right', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
                 {Math.round(nextLevelXP - currentXP)} XP to next level
             </div>

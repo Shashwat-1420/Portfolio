@@ -20,6 +20,37 @@ $watcher.EnableRaisingEvents = $True
 # Debounce mechanism
 $global:lastChangeTime = [DateTime]::MinValue
 
+function Update-Manifest {
+    param($RootPath)
+    Write-Host "  > Updating manifest.json..."
+    $manifestPath = Join-Path $RootPath "manifest.json"
+    
+    # Get all year directories (4 digits)
+    $yearDirs = Get-ChildItem -Path $RootPath -Directory | Where-Object { $_.Name -match "^\d{4}$" }
+    
+    $yearsObj = @{}
+    
+    foreach ($dir in $yearDirs) {
+        $files = Get-ChildItem -Path $dir.FullName -Filter "*.md" | Select-Object -ExpandProperty Name
+        if ($files) {
+             # Ensure $files is an array even if single item
+            if ($files -is [string]) { $files = @($files) }
+            $yearsObj[$dir.Name] = $files
+        } else {
+            $yearsObj[$dir.Name] = @()
+        }
+    }
+    
+    # Create the final object structure
+    $manifestData = @{
+        years = $yearsObj
+    }
+    
+    # Convert to JSON and save
+    $jsonContent = $manifestData | ConvertTo-Json -Depth 4
+    Set-Content -Path $manifestPath -Value $jsonContent
+}
+
 $action = {
     $path = $Event.SourceEventArgs.FullPath
     $name = $Event.SourceEventArgs.Name
@@ -27,7 +58,6 @@ $action = {
     
     $now = Get-Date
     if (($now - $global:lastChangeTime).TotalSeconds -lt 2) { 
-        # Write-Host "Ignored debounce: $name"
         return 
     }
     $global:lastChangeTime = $now
@@ -38,11 +68,15 @@ $action = {
     Start-Sleep -Seconds 1
     
     try {
+        # Update manifest first
+        Update-Manifest -RootPath $folderPath
+        
         Write-Host "  > Staging..."
         git add "$path"
+        git add "$folderPath\manifest.json"
         
         Write-Host "  > Committing..."
-        git commit -m "Auto-update progress report: $name"
+        git commit -m "Auto-update progress report and manifest: $name"
         
         Write-Host "  > Pushing..."
         git push

@@ -1,42 +1,55 @@
-# [Day Title/Theme]
+# [Title: A Short, Catchy Summary of the Day]
+<!-- INSTRUCTION: Replace everything in [brackets] with your own text. Remove the brackets! -->
+<!-- Example: "Mastered React Hooks" or "Battled CSS Grid & Won" -->
 
 **Date:** [YYYY-MM-DD]
+<!-- Pick one mood that best represents your overall feeling -->
 **Mood:** [Mood] (Options: 🚀 Excellent, 😊 Good, 😐 Okay, 😤 Tough)
+<!-- Be honest! 10=Perfect flow, 1=Complete blocker. avg is 7 -->
 **Score:** [1-10]/10
 
 ---
 
 ## 🎯 Primary Focus
-> One sentence summary of what mattered most today.
+<!-- What was the ONE main thing you wanted to achieve today? -->
+> [The "Big Rock" for today. Example: Fix the login bug or Learn Flexbox]
 
 ---
 
 ## ✅ Done Today
-- [ ] Major Task 1
-- [ ] Major Task 2
-- [ ] 小 Task A
+<!-- Use - [x] for done, - [ ] for partial. Be specific! -->
+- [ ] [Major Achievement 1 - e.g. Implemented Authentication]
+- [ ] [Task 2 - e.g. Wrote unit tests for API]
+- [ ] [Small Win - e.g. Cleaned up folder structure]
 
 ## 💡 Learned
-- Key insight 1
-- Technical discovery 2
+<!-- Technical concepts, soft skills, or life lessons. Use `code` for keywords -->
+- [Insight 1 - e.g. `useEffect` runs after every render unless dependency array is set]
+- [Insight 2 - e.g. Taking breaks actually improves code quality]
 
 ## 🚧 Challenges
-- Blocker 1
-- Difficult concept 2
+<!-- What stuck? What was hard? Great for tracking patterns over time -->
+- [Challenge 1 - e.g. Merge conflicts in git]
+- [Challenge 2 - e.g. Distracted by social media]
 
 ---
 
 ## 🧠 Thoughts & Reflection
-Write your daily reflection here. How did it go? What could be better?
+<!-- Brain dump! How did you feel? What gave you energy? What drained it? -->
+[Write your daily reflection here. Honest thoughts help you grow. Example: "Felt slow in the morning but got into a flow state after lunch."]
 
 ## 🔭 Plan for Tomorrow
-- [Priority 1]
+<!-- Set yourself up for success. Limit to top 3 priorities -->
+- [Priority 1 - The most important task]
 - [Priority 2]
+- [Priority 3]
 
 ## 🧘 Gratitude
-1. 
-2. 
-3. 
+<!-- 3 simple things. Rewires brain for positivity. -->
+1. [Person or thing A]
+2. [Person or thing B]
+3. [Person or thing C]
 
 ---
+<!-- Add relevant tags for searching later. e.g. #react #learning #life -->
 `#tag1` `#tag2` `#tag3`

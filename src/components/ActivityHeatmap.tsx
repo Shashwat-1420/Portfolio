@@ -1,13 +1,13 @@
 // components/ActivityHeatmap.tsx
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faCalendarDays, 
-  faCrosshairs, 
-  faFire, 
-  faSmile, 
-  faMeh, 
-  faTired, 
+import {
+  faCalendarDays,
+  faCrosshairs,
+  faFire,
+  faSmile,
+  faMeh,
+  faTired,
   faArrowTrendUp,
   faChartBar,
   faTrophy
@@ -37,29 +37,33 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, onDateCl
   const generateYearData = () => {
     const result = [];
     const today = new Date();
-    
+
     // Start from 365 days ago and go forward to the end of current month
     const startDate = new Date(today);
     startDate.setDate(startDate.getDate() - 364);
-    
+
     // Find the Sunday of the week containing our start date
     const startOfWeek = new Date(startDate);
     startOfWeek.setDate(startDate.getDate() - startDate.getDay());
-    
+
     // Calculate end date as end of the week containing today
     const endOfWeek = new Date(today);
     endOfWeek.setDate(today.getDate() + (6 - today.getDay()));
     endOfWeek.setHours(0, 0, 0, 0);
     const totalDays = Math.ceil((endOfWeek.getTime() - startOfWeek.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    
+
     console.log(`Generating data from ${startOfWeek.toISOString().split('T')[0]} to ${endOfWeek.toISOString().split('T')[0]} (${totalDays} days)`);
-    
+
     // Generate days to cover the full range
     for (let i = 0; i < totalDays; i++) {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      
+      // Use local date parts to construct YYYY-MM-DD to match the source data which is also local
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
       // Find data for this date or default to 0
       const dayData = data.find(d => d.date === dateStr) || {
         date: dateStr,
@@ -67,12 +71,12 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, onDateCl
         achievements: 0,
         mood: 'neutral'
       };
-      
+
       // Skip dates that are in the future beyond today
       if (date > today) {
         dayData.score = 0; // Ensure future dates show as empty
       }
-      
+
       result.push({
         ...dayData,
         dayOfWeek: date.getDay(),
@@ -82,46 +86,46 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, onDateCl
         actualDate: date
       });
     }
-    
+
     // Debug log to check if we're finding the data
     console.log('ActivityHeatmap data points:', data.length);
     console.log('Sample data:', data.slice(0, 3));
     console.log('Generated year data with scores > 0:', result.filter(d => d.score > 0).length);
     console.log('Sample generated data with scores:', result.filter(d => d.score > 0).slice(0, 3));
-    console.log(`Date range: ${result[0]?.actualDate?.toISOString().split('T')[0]} to ${result[result.length-1]?.actualDate?.toISOString().split('T')[0]}`);
-    
+    console.log(`Date range: ${result[0]?.actualDate?.toISOString().split('T')[0]} to ${result[result.length - 1]?.actualDate?.toISOString().split('T')[0]}`);
+
     return result;
   };
 
   const yearData = generateYearData();
   const weeks = Math.ceil(yearData.length / 7);
-  
+
   const monthLabels = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
-  
+
   // Generate dynamic month labels based on actual data
   const getMonthLabels = () => {
     const labels = [];
     const monthWeekRanges = new Map();
     let weekIndex = 0;
-    
+
     // First pass: find the week ranges for each month
     for (let i = 0; i < yearData.length; i += 7) {
       const weekData = yearData.slice(i, i + 7);
       const middleDay = weekData[3] || weekData[0];
-      
+
       if (middleDay && middleDay.actualDate) {
         const month = middleDay.actualDate.getMonth();
         const year = middleDay.actualDate.getFullYear();
         const monthKey = `${year}-${month}`;
-        
+
         if (!monthWeekRanges.has(monthKey)) {
-          monthWeekRanges.set(monthKey, { 
-            start: weekIndex, 
-            end: weekIndex, 
-            month: month, 
+          monthWeekRanges.set(monthKey, {
+            start: weekIndex,
+            end: weekIndex,
+            month: month,
             year: year,
             name: monthLabels[month]
           });
@@ -131,20 +135,20 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, onDateCl
       }
       weekIndex++;
     }
-    
+
     // Second pass: create labels positioned at the center of each month's range
     for (const range of monthWeekRanges.values()) {
       // Skip July 2024
       if (range.name === 'Jul' && range.year === 2024) {
         continue;
       }
-      
+
       // Position label at the center of the month's week range
       const centerWeek = Math.floor((range.start + range.end) / 2);
-      
+
       const lastLabel = labels[labels.length - 1];
       const canAdd = !lastLabel || centerWeek - lastLabel.weekIndex >= 4;
-      
+
       if (canAdd) {
         labels.push({
           month: range.name,
@@ -153,14 +157,14 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, onDateCl
         console.log(`Added ${range.name} ${range.year} at center week ${centerWeek} (range: ${range.start}-${range.end})`);
       }
     }
-    
+
     // Sort by week index
     labels.sort((a, b) => a.weekIndex - b.weekIndex);
-    
+
     console.log('Final month labels:', labels);
     return labels;
   };
-  
+
   const dynamicMonthLabels = getMonthLabels();
 
   // Color intensity based on productivity score
@@ -190,11 +194,11 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, onDateCl
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -232,9 +236,9 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, onDateCl
           alignItems: 'center',
           gap: '0.5rem'
         }}>
-          <FontAwesomeIcon icon={faCalendarDays} style={{ marginRight: '0.5rem' }} /> 365-Day Activity Heatmap
+          <FontAwesomeIcon icon={faCalendarDays} style={{ marginRight: '0.5rem' }} /> 2026 Activity Heatmap
         </h3>
-        
+
         {/* Legend */}
         <div style={{
           display: 'flex',

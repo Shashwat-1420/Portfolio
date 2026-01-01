@@ -81,40 +81,44 @@ class BrowserProgressReader {
       const manifest = await manifestResponse.json();
       console.log('✅ Manifest loaded:', manifest);
 
-      // Process year 2025 (we can expand this logic later for multiple years)
-      const year = "2025";
-      const files = manifest.years?.[year] || [];
+      // Process all years found in manifest
+      const years = Object.keys(manifest.years || {}).sort().reverse(); // Newest years first
 
-      for (const filename of files) {
-        try {
-          // Extract basic info from filename before fetching
-          // Format: day-XXX-YYYY-MM-DD.md
-          const parts = filename.replace('.md', '').split('-');
-          // Handle 'day-1' vs 'day-001'
-          const dayIndex = parts.indexOf('day') + 1;
-          const dayStr = parts[dayIndex];
-          const day = parseInt(dayStr);
+      for (const year of years) {
+        const files = manifest.years?.[year] || [];
+        console.log(`📂 Processing year ${year} (${files.length} files)`);
 
-          // Reconstruct date part (YYYY-MM-DD is usually at the end)
-          // parts might be ['day', '003', '2025', '07', '26']
-          const dateParts = parts.slice(dayIndex + 1);
-          const date = dateParts.join('-');
+        for (const filename of files) {
+          try {
+            // Extract basic info from filename before fetching
+            // Format: day-XXX-YYYY-MM-DD.md
+            const parts = filename.replace('.md', '').split('-');
+            // Handle 'day-1' vs 'day-001'
+            const dayIndex = parts.indexOf('day') + 1;
+            const dayStr = parts[dayIndex];
+            const day = parseInt(dayStr);
 
-          console.log(`🔍 Fetching: ${filename}`);
-          const response = await fetch(`${basePath}/progress-reports/${year}/${filename}?t=${Date.now()}`);
+            // Reconstruct date part (YYYY-MM-DD is usually at the end)
+            // parts might be ['day', '003', '2025', '07', '26']
+            const dateParts = parts.slice(dayIndex + 1);
+            const date = dateParts.join('-');
 
-          if (response.ok) {
-            const content = await response.text();
+            console.log(`🔍 Fetching: ${filename}`);
+            const response = await fetch(`${basePath}/progress-reports/${year}/${filename}?t=${Date.now()}`);
 
-            const parsed = this.parseMarkdownReport(content, filename, day, date);
-            if (parsed) {
-              reports.push(parsed);
+            if (response.ok) {
+              const content = await response.text();
+
+              const parsed = this.parseMarkdownReport(content, filename, day, date, year);
+              if (parsed) {
+                reports.push(parsed);
+              }
+            } else {
+              console.log(`❌ HTTP ${response.status} for ${filename}`);
             }
-          } else {
-            console.log(`❌ HTTP ${response.status} for ${filename}`);
+          } catch (error) {
+            console.log(`❌ Error processing ${filename}:`, error);
           }
-        } catch (error) {
-          console.log(`❌ Error processing ${filename}:`, error);
         }
       }
 
@@ -134,7 +138,7 @@ class BrowserProgressReader {
     }
   }
 
-  private parseMarkdownReport(content: string, filename: string, day: number, date: string): ParsedProgressReport | null {
+  private parseMarkdownReport(content: string, filename: string, day: number, date: string, year: string): ParsedProgressReport | null {
     try {
       console.log(`Parsing content for ${filename}...`);
 
@@ -216,7 +220,7 @@ class BrowserProgressReader {
         focusAreas: undefined, // Your template doesn't have this
         tags: tags.length > 0 ? tags : undefined,
         content,
-        filePath: `${basePath}/progress-reports/2025/${filename}`,
+        filePath: `${basePath}/progress-reports/${year}/${filename}`,
         achievements: achievements.length > 0 ? achievements : undefined,
         challenges: challenges.length > 0 ? challenges : undefined,
         learnings: learnings.length > 0 ? learnings : undefined
